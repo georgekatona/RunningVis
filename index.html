@@ -225,7 +225,6 @@
     function onSearchButtonClick() {
         let search_id = document.getElementById("runner_id").value;
         let result = runners.find(runner => runner.running_id === search_id);
-        console.log(result);
         if (typeof result !== "undefined") {
             highlighted_id = result.running_id;
             document.getElementById("resultText").innerHTML = "";
