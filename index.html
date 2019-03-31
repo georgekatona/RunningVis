@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+    <meta charset="UTF-8">
+    <title>Vivicittá Vizualizáció</title>
+</head>
+<body>
+<label>
+    <span style="font-size: 144%; ">Vivicittá 2018 - Félmaraton vizualizáció</span>
+</label>
+<div id="buttonDiv">
+    <input type="range" min="0" max="12000" value="0" class="slider" id="timeRange">
+    <button type="button" onclick="onStartButtonClick()">Start</button>
+    <button type="button" onclick="onStopButtonClick()">Stop</button>
+    <button type="button" onclick="onResetButtonClick()">Reset</button>
+    <label>Idő:</label>
+    <label id="time">00:00:00</label>
+</div>
+<div id="inputDiv">
+    Rajtszám: <input id="runner_id" type="text" id="text-input" size="4">
+    <button type="button" onclick="onSearchButtonClick()">Keres</button>
+    <button type="button" onclick="onXButtonClick()">X</button>
+    <label id="resultText"/>
+</div>
+<canvas id="run-canvas"></canvas>
+<p>
+<div>Készítette: <a href="https://georgekatona.com/author/">Katona György</a> (<a
+        href="https://www.linkedin.com/in/gyorgy-katona/">LinkedIn</a>, <a
+        href="https://georgekatona.com/">Blog</a>)
+</div>
+<div>Hogyan készült: <a href="https://georgekatona.com/author/">TODO</a></div>
+<div>2019-es esemény: <a href="http://www.futanet.hu/cikk/telekom-vivicitta-felmaraton-2019">Vivicittá félmaraton
+    2019</a>
+</div>
+</p>
+</body>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+    let runners;
+    let highlighted_id = -1;
+    let time = 0;
+    let started = false;
+
+    let unit = Math.floor(screen.availHeight / 200) * 10;
+    let margin = {top: 0.5 * unit, right: unit, bottom: 0, left: unit};
+    let width = 6 * unit;
+    let height = 18 * unit;
+    let routeWidth = unit / 2;
+    let dotRadius = 1;
+
+    let slider = document.getElementById("timeRange");
+    slider.oninput = function () {
+        time = +this.value;
+        document.getElementById("time").innerHTML = seconds_to_hms(time);
+        draw()
+    };
+
+    let canvas = d3.select("#run-canvas")
+        .attr("width", width)
+        .attr("height", height)
+        .style("transform", "translate(" + (margin.left) +
+            "px" + "," + (margin.top) + "px" + ")");
+    let context = canvas.node().getContext("2d");
+
+
+    d3.csv("vivicitta_2018.csv").then(function (data) {
+        runners = data;
+
+        runners.forEach(function (d) {
+            d.random_offset = getRandomOffset(d.running_id);
+        });
+
+        draw();
+        d3.interval(function () {
+            if (started) {
+                time += 12;
+
+                slider.value = time;
+                document.getElementById("time").innerHTML = seconds_to_hms(time);
+                draw();
+            }
+        }, 20);
+    });
+
+    function drawRoute() {
+        // Route
+        context.beginPath();
+        context.moveTo(3 * unit, 4 * unit);
+        context.lineTo(3 * unit, 5 * unit);
+        context.lineTo(4 * unit, 5 * unit);
+        context.lineTo(4 * unit, 9 * unit);
+        context.lineTo(unit, 9 * unit);
+        context.lineTo(unit, 8 * unit);
+        context.lineTo(2 * unit, 8 * unit);
+        context.lineTo(2 * unit, 16 * unit);
+        context.lineTo(unit, 16 * unit);
+        context.lineTo(unit, 13 * unit);
+        context.lineTo(4 * unit, 13 * unit);
+        context.lineTo(4 * unit, 9 * unit);
+        context.moveTo(4 * unit, 5 * unit);
+        context.lineTo(4 * unit, 4 * unit);
+        context.lineTo(5 * unit, 4 * unit);
+        context.lineTo(5 * unit, 5 * unit);
+        context.lineTo(4 * unit, 5 * unit);
+        context.moveTo(3 * unit, 4 * unit);
+        context.lineTo(3 * unit, 1.8 * unit);
+
+        context.strokeStyle = "rgb(217,217,217)";
+        context.lineWidth = routeWidth;
+        context.stroke();
+    }
+
+    function drawDanube() {
+        context.beginPath();
+        context.moveTo(3 * unit, 0);
+        context.lineTo(3 * unit, 0.5 * unit);
+        context.lineTo(3.5 * unit, unit);
+        context.lineTo(3.5 * unit, 5.5 * unit);
+        context.lineTo(3 * unit, 6 * unit);
+        context.moveTo(3 * unit, 0.5 * unit);
+        context.lineTo(2.5 * unit, unit);
+        context.lineTo(2.5 * unit, 5.5 * unit);
+        context.lineTo(3 * unit, 6 * unit);
+        context.lineTo(3 * unit, 17 * unit);
+
+        context.strokeStyle = "rgb(67, 162, 202)";
+        context.lineWidth = 10;
+        context.stroke();
+    }
+
+    function drawDot(d, r, color) {
+        context.fillStyle = color;
+        let state = getState(d);
+        let cx = getRunnerX(d, state);
+        let cy = getRunnerY(d, state);
+
+        context.beginPath();
+
+        context.arc(cx, cy, r, 0, 2 * Math.PI);
+        context.fill();
+    }
+
+    function drawLabels() {
+        // Start line
+        context.font = routeWidth + "px Arial Black";
+        context.fillStyle = "black";
+        context.fillText("start", 0.8 * unit, 4.1 * unit);
+        context.beginPath();
+        context.moveTo(2.68 * unit, 4 * unit);
+        context.lineTo(3.32 * unit, 4 * unit);
+
+        // Finish line
+        context.fillText("finish", 0.8 * unit, 1.9 * unit);
+        context.moveTo(2.68 * unit, 1.8 * unit);
+        context.lineTo(3.32 * unit, 1.8 * unit);
+
+        // Other lines
+        context.fillText("5k", 0.7 * unit, 7.5 * unit);
+        context.moveTo(0.7 * unit, 7.7 * unit);
+        context.lineTo(1.35 * unit, 8.35 * unit);
+
+        context.fillText("10k", 0.5 * unit, 17 * unit);
+        context.moveTo(0.70 * unit, 16.3 * unit);
+        context.lineTo(1.35 * unit, 15.65 * unit);
+
+        context.fillText("13k", 3.5 * unit, 14 * unit);
+        context.moveTo(3.65 * unit, 12.65 * unit);
+        context.lineTo(4.3 * unit, 13.3 * unit);
+
+        context.fillText("18k", 4.5 * unit, 3.5 * unit);
+        context.moveTo(4.65 * unit, 4.35 * unit);
+        context.lineTo(5.3 * unit, 3.7 * unit);
+
+        context.strokeStyle = "black";
+        context.lineWidth = 3;
+        context.stroke();
+
+        // Danube label
+        context.fillStyle = "rgb(67, 162, 202)";
+        context.save();
+        context.translate(3.3 * unit, 15 * unit);
+        context.rotate(Math.PI / 2);
+        context.fillText("Duna", 0, 0);
+        context.restore();
+    }
+
+    function drawRunners() {
+        if (highlighted_id === -1) {
+            runners.forEach(function (d) {
+                drawDot(d, dotRadius, "rgb(230, 0, 126)");
+            });
+        } else {
+            runners.forEach(function (d) {
+                drawDot(d, dotRadius, "rgb(201,148,199)");
+            });
+            let highlighted = runners.find(runner => runner.running_id === highlighted_id);
+            drawDot(highlighted, 4 * dotRadius, "rgb(230, 0, 126)")
+        }
+    }
+
+    function draw() {
+        context.clearRect(0, 0, width, height);
+        drawDanube();
+        drawRoute();
+        drawRunners();
+        drawLabels();
+    }
+
+    function onStartButtonClick() {
+        started = true;
+    }
+
+    function onStopButtonClick() {
+        started = false;
+    }
+
+    function onResetButtonClick() {
+        time = 0;
+        document.getElementById("time").innerHTML = seconds_to_hms(time);
+        slider.value = time;
+        draw();
+    }
+
+    function onSearchButtonClick() {
+        let search_id = document.getElementById("runner_id").value;
+        let result = runners.find(runner => runner.running_id === search_id);
+        console.log(result);
+        if (typeof result !== "undefined") {
+            highlighted_id = result.running_id;
+            document.getElementById("resultText").innerHTML = "";
+        } else {
+            document.getElementById("resultText").innerHTML = "Nincs találat!";
+            highlighted_id = -1;
+        }
+        draw();
+    }
+
+    function onXButtonClick() {
+        document.getElementById("runner_id").value = "";
+        highlighted_id = -1;
+        draw();
+    }
+
+    function getRandomOffset(running_id) {
+        let maxLength = routeWidth - dotRadius;
+        let random = (31 * running_id + 127) % maxLength;
+        return random - maxLength / 2
+    }
+
+    function getState(d) {
+        let phase;
+        let progress;
+        let start_time = hms_to_seconds(d["gross_time"]) - hms_to_seconds(d["net_time"]);
+        let net_time;
+
+        if (time < hms_to_seconds(d["10km"])) {
+            let net_ten_k = hms_to_seconds(d["10km"]) - start_time;
+            phase = "10k";
+            net_time = time - start_time;
+            progress = net_time / net_ten_k;
+        } else if (time < hms_to_seconds(d["17km"])) {
+            let net_seventeen_k = hms_to_seconds(d["17km"]) - hms_to_seconds(d["10km"]);
+            phase = "17k";
+            net_time = time - hms_to_seconds(d["10km"]);
+            progress = net_time / net_seventeen_k;
+        } else {
+            let net_twenty_one_k = hms_to_seconds(d["gross_time"]) - hms_to_seconds(d["17km"]);
+            phase = "21k";
+            net_time = time - hms_to_seconds(d["17km"]);
+            progress = net_time / net_twenty_one_k;
+        }
+
+        return {phase: phase, progress: progress};
+    }
+
+    function getRunnerX(d, state) {
+        switch (state.phase) {
+            case "10k":
+                if (state.progress < 0.05) return 3 * unit + d.random_offset;
+                else if (state.progress < 0.1) {
+                    let from = 3 * unit + d.random_offset;
+                    let to  = 4 * unit + d.random_offset;
+                    return from + (to  - from) * (state.progress - 0.05) * 20;
+                }
+                else if (state.progress < 0.3) return 4 * unit + d.random_offset;
+                else if (state.progress < 0.45) {
+                    let from = 4 * unit + d.random_offset;
+                    let to  = unit - d.random_offset;
+                    return from + (to  - from) * (state.progress - 0.3) * 20 / 3;
+                }
+                else if (state.progress < 0.5) return unit - d.random_offset;
+                else if (state.progress < 0.55) {
+                    let from = unit - d.random_offset;
+                    let to  = 2 * unit + d.random_offset;
+                    return from + (to  - from) * (state.progress - 0.5) * 20;
+                }
+                else if (state.progress < 0.95) return 2 * unit + d.random_offset;
+                else {
+                    let from = 2 * unit + d.random_offset;
+                    let to  = unit - d.random_offset;
+                    return from + (to  - from) * (state.progress - 0.95) * 20;
+                }
+            case "17k":
+                if (state.progress < 1.5 / 7) return unit - d.random_offset;
+                else if (state.progress < 3 / 7) {
+                    let from = unit - d.random_offset;
+                    let to  = 4 * unit - d.random_offset;
+                    return from + (to  - from) * (state.progress - 1.5 / 7) * 7 / 1.5;
+                }
+                else return 4 * unit - d.random_offset;
+            case "21k":
+                if (state.progress < 0.5 / 4.1) return 4 * unit - d.random_offset;
+                else if (state.progress < 1.0 / 4.1) {
+                    let from = 4 * unit - d.random_offset;
+                    let to  = 5 * unit + d.random_offset;
+                    return from + (to  - from) * (state.progress - 0.5 / 4.1) * 4.1 / 0.5;
+                }
+                else if (state.progress < 1.5 / 4.1) return 5 * unit + d.random_offset;
+                else if (state.progress < 2.5 / 4.1) {
+                    let from = 5 * unit + d.random_offset;
+                    let to  = 3 * unit - d.random_offset;
+                    return from + (to  - from) * (state.progress - 1.5 / 4.1) * 4.1;
+                }
+                else return 3 * unit - d.random_offset;
+        }
+    }
+
+    function getRunnerY(d, state) {
+        switch (state.phase) {
+            case "10k":
+                if (state.progress < 0) {
+                    let from = 4 * unit;
+                    let to = 2 * unit;
+                    return from + (to - from) * -state.progress;
+                }
+                else if (state.progress < 0.05) {
+                    let from = 4 * unit;
+                    let to = 5 * unit - d.random_offset;
+                    return from + (to - from) * state.progress * 20;
+                }
+                else if (state.progress < 0.1) return 5 * unit - d.random_offset;
+                else if (state.progress < 0.3) {
+                    let from = 5 * unit - d.random_offset;
+                    let to = 9 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 0.1) * 5;
+                }
+                else if (state.progress < 0.45) return 9 * unit + d.random_offset;
+                else if (state.progress < 0.5) {
+                    let from = 9 * unit + d.random_offset;
+                    let to = 8 * unit - d.random_offset;
+                    return from + (to - from) * (state.progress - 0.45) * 20
+                }
+                else if (state.progress < 0.55) return 8 * unit - d.random_offset;
+                else if (state.progress < 0.95) {
+                    let from = 8 * unit - d.random_offset;
+                    let to = 16 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 0.55) * 5 / 2
+                } else return 16 * unit + d.random_offset;
+            case "17k":
+                if (state.progress < 1.5 / 7) {
+                    let from = 16 * unit + d.random_offset;
+                    let to = 13 * unit - d.random_offset;
+                    return from + (to - from) * state.progress * 7 / 1.5;
+                }
+                else if (state.progress < 3 / 7) return 13 * unit - d.random_offset;
+                else {
+                    let from = 13 * unit - d.random_offset;
+                    let to = 5 * unit;
+                    return from + (to - from) * (state.progress - 3 / 7) * 7 / 4;
+                }
+            case "21k":
+                if (state.progress < 0.5 / 4.1) {
+                    let from = 5 * unit;
+                    let to = 4 * unit - d.random_offset;
+                    return from + (to - from) * (state.progress) * 4.1 / 0.5;
+                }
+                else if (state.progress < 1.0 / 4.1) return 4 * unit - d.random_offset;
+                else if (state.progress < 1.5 / 4.1) {
+                    let from = 4 * unit - d.random_offset;
+                    let to = 5 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 1 / 4.1) * 4.1 / 0.5;
+                }
+                else if (state.progress < 2.5 / 4.1) return 5 * unit + d.random_offset;
+                else if (state.progress < 1) {
+                    let from = 5 * unit + d.random_offset;
+                    let to = 1.8 * unit;
+                    return from + (to - from) * (state.progress - 2.5 / 4.1) * 4.1 / 1.6;
+                }
+                else {
+                    let from = 1.8 * unit;
+                    let to = 1.3 * unit;
+                    return from + (to - from) * (1 - 1 / state.progress);
+                }
+
+        }
+    }
+
+    function hms_to_seconds(hms) {
+        let a = hms.split(":");
+        return (+a[0]) * 60 * 60 + (+a[1]) * 60 + (+a[2]);
+    }
+
+    function seconds_to_hms(seconds) {
+        return new Date(seconds * 1000).toISOString().substr(11, 8);
+    }
+
+</script>
+</html>
