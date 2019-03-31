@@ -4,6 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Vivicittá Vizualizáció</title>
+    <meta property="og:title" content="Vivicittá Félmaraton Vizualizáció"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="https://georgekatona.com/vivicitta/index.html"/>
+    <meta property="og:image" content="https://georgekatona.com/img/runvis_vivicitta.png">
+    <meta property="og:image:width" content="1200"/>
+    <meta property="og:image:height" content="630"/>
+    <meta property="og:description"
+          content="Kövesd nyomon a te vagy ismerősöd teljesítményét a 2018-as mezőnyben!">
 </head>
 <body>
 <label>
@@ -29,7 +37,10 @@
         href="https://www.linkedin.com/in/gyorgy-katona/">LinkedIn</a>, <a
         href="https://georgekatona.com/">Blog</a>)
 </div>
-<div>Hogyan készült: <a href="https://georgekatona.com/author/">TODO</a></div>
+<div>Hogyan készült: <a
+        href="https://georgekatona.com/2019/04/04/Dynamic-Visualization-of-Over-7000-Half-Marathonists/"
+>Blog Post</a>
+</div>
 <div>2019-es esemény: <a href="http://www.futanet.hu/cikk/telekom-vivicitta-felmaraton-2019">Vivicittá félmaraton
     2019</a>
 </div>
@@ -279,47 +290,47 @@
                 if (state.progress < 0.05) return 3 * unit + d.random_offset;
                 else if (state.progress < 0.1) {
                     let from = 3 * unit + d.random_offset;
-                    let to  = 4 * unit + d.random_offset;
-                    return from + (to  - from) * (state.progress - 0.05) * 20;
+                    let to = 4 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 0.05) * 20;
                 }
                 else if (state.progress < 0.3) return 4 * unit + d.random_offset;
                 else if (state.progress < 0.45) {
                     let from = 4 * unit + d.random_offset;
-                    let to  = unit - d.random_offset;
-                    return from + (to  - from) * (state.progress - 0.3) * 20 / 3;
+                    let to = unit - d.random_offset;
+                    return from + (to - from) * (state.progress - 0.3) * 20 / 3;
                 }
                 else if (state.progress < 0.5) return unit - d.random_offset;
                 else if (state.progress < 0.55) {
                     let from = unit - d.random_offset;
-                    let to  = 2 * unit + d.random_offset;
-                    return from + (to  - from) * (state.progress - 0.5) * 20;
+                    let to = 2 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 0.5) * 20;
                 }
                 else if (state.progress < 0.95) return 2 * unit + d.random_offset;
                 else {
                     let from = 2 * unit + d.random_offset;
-                    let to  = unit - d.random_offset;
-                    return from + (to  - from) * (state.progress - 0.95) * 20;
+                    let to = unit - d.random_offset;
+                    return from + (to - from) * (state.progress - 0.95) * 20;
                 }
             case "17k":
                 if (state.progress < 1.5 / 7) return unit - d.random_offset;
                 else if (state.progress < 3 / 7) {
                     let from = unit - d.random_offset;
-                    let to  = 4 * unit - d.random_offset;
-                    return from + (to  - from) * (state.progress - 1.5 / 7) * 7 / 1.5;
+                    let to = 4 * unit - d.random_offset;
+                    return from + (to - from) * (state.progress - 1.5 / 7) * 7 / 1.5;
                 }
                 else return 4 * unit - d.random_offset;
             case "21k":
                 if (state.progress < 0.5 / 4.1) return 4 * unit - d.random_offset;
                 else if (state.progress < 1.0 / 4.1) {
                     let from = 4 * unit - d.random_offset;
-                    let to  = 5 * unit + d.random_offset;
-                    return from + (to  - from) * (state.progress - 0.5 / 4.1) * 4.1 / 0.5;
+                    let to = 5 * unit + d.random_offset;
+                    return from + (to - from) * (state.progress - 0.5 / 4.1) * 4.1 / 0.5;
                 }
                 else if (state.progress < 1.5 / 4.1) return 5 * unit + d.random_offset;
                 else if (state.progress < 2.5 / 4.1) {
                     let from = 5 * unit + d.random_offset;
-                    let to  = 3 * unit - d.random_offset;
-                    return from + (to  - from) * (state.progress - 1.5 / 4.1) * 4.1;
+                    let to = 3 * unit - d.random_offset;
+                    return from + (to - from) * (state.progress - 1.5 / 4.1) * 4.1;
                 }
                 else return 3 * unit - d.random_offset;
         }
